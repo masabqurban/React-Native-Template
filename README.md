@@ -14,6 +14,7 @@ A production-grade **React Native + TypeScript** starter built on **Expo SDK 58*
 ## Contents
 
 - [Highlights](#highlights)
+- [Use this template](#use-this-template)
 - [Getting started](#getting-started)
 - [Scripts](#scripts)
 - [Project structure](#project-structure)
@@ -38,6 +39,39 @@ A production-grade **React Native + TypeScript** starter built on **Expo SDK 58*
 | **Accessibility** | Roles, labels and states on every control, 44pt touch targets, Dynamic Type support, screen-reader-friendly chart and alerts                                       |
 | **Quality**       | Strict TypeScript, ESLint (`eslint-config-expo`) with import boundaries, Prettier, Jest + React Native Testing Library, Maestro flows, `expo-doctor` in CI         |
 | **Delivery**      | EAS build profiles (development, preview, production) with separate app IDs, OTA update channels, CI that bundles all three platforms                              |
+
+## Use this template
+
+**1. Create your repository.** Click **Use this template → Create a new repository** at the top of this page. Your new repository gets a clean history and no link back to this one. Or use the GitHub CLI:
+
+```bash
+gh repo create my-app --template masabqurban/React-Native-Template --private --clone
+cd my-app
+```
+
+Prefer no Git history at all? Run `npx degit masabqurban/React-Native-Template my-app`.
+
+**2. Install and run it.**
+
+```bash
+npm install
+npm start    # scan the QR code with Expo Go; demo@example.com / password123
+```
+
+**3. Make it yours.**
+
+- `package.json`: change `"name"` from `react-native-template`.
+- `app.config.ts`: the app names and bundle IDs for each variant (`com.example.acme…`), `slug` and `scheme`. **Pick the bundle IDs before your first store build:** they can't be changed after release.
+- The icons and splash images in `assets/`, and the design tokens in `src/theme/tokens.ts`.
+- Run `npx eas-cli@latest init` to link the project to your own Expo account before building.
+- Replace the copyright holder in `LICENSE` (or choose another license), and rewrite this README for your project.
+
+**4. Remove what you don't need.** The demo is there to show the patterns end to end. Keep the parts you'll build on and delete the rest:
+
+- **Connect your API:** set `EXPO_PUBLIC_API_URL`. The built-in mock API (`src/mocks/`) switches off automatically. The [Node.js Template](https://github.com/masabqurban/Node.js-Template) implements the same contract.
+- Delete a demo screen by removing its `src/features/<name>/` folder and its route file under `src/app/`. Typed routes regenerate, and `npm run typecheck` shows what's left to fix.
+
+**5. Turn on the repository settings.** In **Settings → Code security**, enable Dependabot alerts and private vulnerability reporting (`SECURITY.md` points reporters there). CI in `.github/workflows/` runs on your first push with no secrets required. Add branch protection on `main` that requires it to pass.
 
 ## Getting started
 
