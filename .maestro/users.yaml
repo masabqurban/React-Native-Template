@@ -1,0 +1,11 @@
+# Browse and filter users. Run after sign-in.yaml (it signs in first).
+appId: com.example.acme.dev
+---
+- runFlow: sign-in.yaml
+- tapOn: 'Users, tab, 2 of 3'
+- assertVisible: 'ava.turner2@example.com'
+- tapOn: 'Suspended'
+- assertNotVisible: 'ava.turner2@example.com'
+- tapOn: 'All'
+- tapOn: 'Ava Turner.*'
+- assertVisible: 'Edit user'

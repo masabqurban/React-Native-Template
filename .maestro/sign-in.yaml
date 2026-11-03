@@ -1,0 +1,16 @@
+# End-to-end flow for a real device or simulator, run with Maestro
+# (https://maestro.dev):  maestro test .maestro
+# Needs a development or preview build installed, using the mock API.
+appId: com.example.acme.dev
+---
+- launchApp:
+    clearState: true
+- assertVisible: 'Sign in'
+- tapOn: 'Email'
+- inputText: 'demo@example.com'
+- tapOn: 'Password'
+- inputText: 'password123'
+- tapOn:
+    text: 'Sign in'
+    index: 1
+- assertVisible: 'Total users'
