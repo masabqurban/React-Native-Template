@@ -38,7 +38,7 @@ A production-grade **React Native + TypeScript** starter built on **Expo SDK 58*
 | **UI**            | Typed design tokens, light / dark / system theme, FlashList for long lists, no UI kit lock-in                                                                      |
 | **Accessibility** | Roles, labels and states on every control, 44pt touch targets, Dynamic Type support, screen-reader-friendly chart and alerts                                       |
 | **Quality**       | Strict TypeScript, ESLint (`eslint-config-expo`) with import boundaries, Prettier, Jest + React Native Testing Library, Maestro flows, `expo-doctor` in CI         |
-| **Delivery**      | EAS build profiles (development, preview, production) with separate app IDs, OTA update channels, CI that bundles all three platforms                              |
+| **Delivery**      | EAS build profiles (development, preview, production), OTA update channels, CI bundling + GitHub Actions Android `.apk` & iOS builds                               |
 
 ## Use this template
 
@@ -199,6 +199,12 @@ npx eas-cli@latest submit --profile production --platform ios
 ```
 
 Each profile publishes to its own update channel, and app version numbers are managed remotely and auto-incremented for production. Run `npx eas-cli@latest init` once to link the project to your Expo account.
+
+**GitHub Actions native builds:** pushing to `main` (or triggering **Build Android APK & iOS Simulator** manually) runs `expo prebuild` and uploads:
+
+- **Android (`android-apk`):** a debug-signed `app-release.apk` you can install directly on Android devices/emulators (add a release upload keystore for Play Store signing).
+- **iOS (`ios-simulator-app`):** an unsigned `.app` zipped for the iOS Simulator (signed `.ipa` device/TestFlight builds require an Apple Developer Program membership via Xcode signing secrets or EAS).
+- **Optional cloud EAS builds (`eas-build.yml`):** trigger manually once `EXPO_TOKEN` is configured; `preview` builds an `.apk` directly via `eas.json`.
 
 **Web:** `npx expo export --platform web` produces a static single-page app in `dist/`. The host must rewrite unknown paths to `index.html`; `vercel.json` already does this.
 

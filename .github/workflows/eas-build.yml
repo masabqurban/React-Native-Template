@@ -1,0 +1,55 @@
+name: EAS Cloud Build (Optional)
+
+# Builds installable Android (.apk/.aab) and signed iOS (.ipa) binaries via Expo Application Services.
+# Requires the EXPO_TOKEN repository secret (plus Apple Developer credentials in EAS for iOS .ipa).
+
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: 'Target platform'
+        required: true
+        type: choice
+        default: android
+        options:
+          - android
+          - ios
+          - all
+      profile:
+        description: 'EAS build profile (see eas.json)'
+        required: true
+        type: choice
+        default: preview
+        options:
+          - preview
+          - production
+          - development
+
+permissions:
+  contents: read
+
+jobs:
+  eas:
+    name: EAS Build (${{ inputs.platform }} / ${{ inputs.profile }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - name: Verify EXPO_TOKEN secret
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          if [ -z "$EXPO_TOKEN" ]; then
+            echo "EXPO_TOKEN repository secret is not set. Add an Expo access token to run cloud EAS builds." >&2
+            exit 1
+          fi
+      - uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+      - run: npm ci
+      - run: npx eas-cli build --platform "${{ inputs.platform }}" --profile "${{ inputs.profile }}" --non-interactive --no-wait

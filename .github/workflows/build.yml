@@ -1,0 +1,105 @@
+name: Build Android APK & iOS Simulator
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      api_url:
+        description: 'Optional EXPO_PUBLIC_API_URL to bake into the build (defaults to mock mode if unset)'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  APP_VARIANT: production
+  EXPO_PUBLIC_API_URL: ${{ github.event.inputs.api_url || vars.EXPO_PUBLIC_API_URL || '' }}
+
+jobs:
+  android-apk:
+    name: Android APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - run: npm ci
+
+      - name: Generate Android native project
+        run: npx expo prebuild --platform android --clean
+
+      - name: Build release APK
+        working-directory: android
+        run: ./gradlew assembleRelease --no-daemon
+
+      - name: Upload Android APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: android/app/build/outputs/apk/release/app-release.apk
+          if-no-files-found: error
+          retention-days: 14
+
+  ios-simulator:
+    name: iOS Simulator App
+    runs-on: macos-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+
+      - name: Generate iOS native project
+        run: npx expo prebuild --platform ios --clean
+
+      - name: Install CocoaPods dependencies
+        working-directory: ios
+        run: pod install
+
+      - name: Build unsigned iOS Simulator app
+        run: |
+          WORKSPACE=$(find ios -maxdepth 1 -name '*.xcworkspace' | head -n 1)
+          SCHEME=$(xcodebuild -workspace "$WORKSPACE" -list -json | node -e "const d=JSON.parse(require('fs').readFileSync(0,'utf8')); const s=d.workspace?.schemes||[]; process.stdout.write(s.find(x=>x==='Acme') || s.find(x=>!/pods/i.test(x)) || s[0] || '');")
+          if [ -z "$WORKSPACE" ] || [ -z "$SCHEME" ]; then
+            echo "Failed to resolve Xcode workspace or scheme" >&2
+            exit 1
+          fi
+          echo "Building workspace=$WORKSPACE scheme=$SCHEME"
+          xcodebuild \
+            -workspace "$WORKSPACE" \
+            -scheme "$SCHEME" \
+            -configuration Release \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath ios/build \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+          mkdir -p dist-ios
+          APP_PATH=$(find ios/build/Build/Products/Release-iphonesimulator -maxdepth 1 -name '*.app' | head -n 1)
+          ditto -c -k --keepParent "$APP_PATH" dist-ios/Acme-ios-simulator.zip
+          ls -la dist-ios
+
+      - name: Upload iOS Simulator build
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-simulator-app
+          path: dist-ios/Acme-ios-simulator.zip
+          if-no-files-found: error
+          retention-days: 14
