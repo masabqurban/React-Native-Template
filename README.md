@@ -200,7 +200,7 @@ npx eas-cli@latest submit --profile production --platform ios
 
 Each profile publishes to its own update channel, and app version numbers are managed remotely and auto-incremented for production. Run `npx eas-cli@latest init` once to link the project to your Expo account.
 
-**GitHub Actions native builds:** pushing to `main` (or triggering **Build Android APK & iOS Simulator** manually) runs `expo prebuild` and uploads:
+**GitHub Actions native builds:** pushing to `main` (or triggering **Build Android APK & iOS Simulator** manually) runs `expo prebuild` and uploads both to **Actions artifacts** and to the rolling `main-build` **pre-release** on GitHub **Releases**:
 
 - **Android (`android-apk`):** a debug-signed `app-release.apk` you can install directly on Android devices/emulators (add a release upload keystore for Play Store signing).
 - **iOS (`ios-simulator-app`):** an unsigned `.app` zipped for the iOS Simulator (signed `.ipa` device/TestFlight builds require an Apple Developer Program membership via Xcode signing secrets or EAS).

@@ -36,8 +36,15 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - uses: android-actions/setup-android@v3
       - run: npm ci
+
+      - name: Accept preinstalled Android SDK licenses
+        run: |
+          SDK_ROOT="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+          SDKMANAGER=$(find "$SDK_ROOT/cmdline-tools" -name sdkmanager -type f | head -n 1)
+          if [ -n "$SDKMANAGER" ]; then
+            yes | "$SDKMANAGER" --licenses >/dev/null 2>&1 || true
+          fi
 
       - name: Generate Android native project
         run: npx expo prebuild --platform android --clean
@@ -90,6 +97,8 @@ jobs:
             -destination 'generic/platform=iOS Simulator' \
             -derivedDataPath ios/build \
             CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
             build
           mkdir -p dist-ios
           APP_PATH=$(find ios/build/Build/Products/Release-iphonesimulator -maxdepth 1 -name '*.app' | head -n 1)
@@ -103,3 +112,29 @@ jobs:
           path: dist-ios/Acme-ios-simulator.zip
           if-no-files-found: error
           retention-days: 14
+
+  release-main:
+    name: Update main pre-release
+    needs: [android-apk, ios-simulator]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+      - name: Publish rolling main-build pre-release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+        run: |
+          NOTES="Automated Android APK & iOS Simulator build from \`main\` commit \`${SHA::7}\`."
+          if gh release view main-build --repo "$REPO" >/dev/null 2>&1; then
+            gh release upload main-build artifacts/* --repo "$REPO" --clobber
+            gh release edit main-build --repo "$REPO" --prerelease --notes "$NOTES"
+          else
+            gh release create main-build artifacts/* --repo "$REPO" --prerelease --target "$SHA" --title "Latest main build" --notes "$NOTES"
+          fi
