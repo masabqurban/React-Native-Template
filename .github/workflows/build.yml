@@ -125,6 +125,16 @@ jobs:
         with:
           path: artifacts
           merge-multiple: true
+      - name: Flatten and verify artifacts
+        run: |
+          mkdir -p dist-upload
+          find artifacts -type f \( -name '*.apk' -o -name '*.zip' -o -name '*.ipa' \) -exec cp {} dist-upload/ \;
+          echo "Files to publish:"
+          ls -la dist-upload
+          if [ -z "$(ls -A dist-upload)" ]; then
+            echo "ERROR: No build artifacts found to publish!" >&2
+            exit 1
+          fi
       - name: Publish rolling main-build pre-release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -132,9 +142,12 @@ jobs:
           SHA: ${{ github.sha }}
         run: |
           NOTES="Automated Android APK & iOS Simulator build from \`main\` commit \`${SHA::7}\`."
-          if gh release view main-build --repo "$REPO" >/dev/null 2>&1; then
-            gh release upload main-build artifacts/* --repo "$REPO" --clobber
-            gh release edit main-build --repo "$REPO" --prerelease --notes "$NOTES"
-          else
-            gh release create main-build artifacts/* --repo "$REPO" --prerelease --target "$SHA" --title "Latest main build" --notes "$NOTES"
-          fi
+          # Always delete + recreate so assets are fresh
+          gh release delete main-build --repo "$REPO" --yes 2>/dev/null || true
+          git push --delete origin main-build 2>/dev/null || true
+          gh release create main-build dist-upload/* \
+            --repo "$REPO" \
+            --prerelease \
+            --target "$SHA" \
+            --title "Latest main build ($(date -u +'%Y-%m-%d %H:%M UTC'))" \
+            --notes "$NOTES"
