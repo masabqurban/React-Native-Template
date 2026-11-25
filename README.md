@@ -142,15 +142,15 @@ eas.json                      Build profiles and update channels
 
 ## Authentication and security
 
-| Concern       | Approach                                                                                                                                                 |
-| ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Refresh token | `expo-secure-store` (iOS Keychain / Android Keystore), `WHEN_UNLOCKED_THIS_DEVICE_ONLY`: encrypted, never in AsyncStorage, not restored to other devices |
-| Access token  | In memory only                                                                                                                                           |
-| App launch    | The splash screen stays up while the session is restored, so there's no flash of the sign-in screen                                                      |
-| Expired token | One refresh on 401, shared by concurrent requests so they don't trip the server's refresh-token reuse detection                                          |
-| Guards        | `Stack.Protected` swaps the available screens when the session changes. Client-side only: the API authorises every request                               |
-| Secrets       | Nothing secret in `EXPO_PUBLIC_*`: those values ship inside the app bundle                                                                               |
-| Web           | `expo-secure-store` has no web support, so the web build keeps the refresh token in tab-scoped `sessionStorage`                                          |
+| Concern       | Approach                                                                                                                                                                 |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Refresh token | `expo-secure-store` (iOS Keychain / Android Keystore), `WHEN_UNLOCKED_THIS_DEVICE_ONLY`: encrypted, never in AsyncStorage, not restored to other devices                 |
+| Access token  | In memory only                                                                                                                                                           |
+| App launch    | The splash screen stays up while the session is restored, so there's no flash of the sign-in screen                                                                      |
+| Expired token | One refresh on 401, shared by concurrent requests so they don't trip the server's refresh-token reuse detection; offline/5xx errors keep the stored refresh token intact |
+| Guards        | `Stack.Protected` swaps the available screens when the session changes. Client-side only: the API authorises every request                                               |
+| Secrets       | Nothing secret in `EXPO_PUBLIC_*`: those values ship inside the app bundle                                                                                               |
+| Web           | `expo-secure-store` has no web support, so the web build keeps the refresh token in tab-scoped `sessionStorage`                                                          |
 
 ## Data fetching and offline behaviour
 
@@ -173,7 +173,7 @@ eas.json                      Build profiles and update channels
 npm run test
 ```
 
-**25 tests** (Jest + React Native Testing Library) cover:
+**28 tests** (Jest + React Native Testing Library) cover:
 
 - the HTTP client: validation, errors, timeouts, refresh and retry;
 - the mock API contract;

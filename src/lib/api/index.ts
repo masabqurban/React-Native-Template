@@ -1,4 +1,4 @@
-export { api, refreshSession } from './api-client';
+export { api, onAuthFailure, refreshSession, resetSessionRefresh } from './api-client';
 export { ApiError, errorMessage, isApiError, type ApiErrorCode } from './api-error';
 export { buildUrl, createHttpClient, type Fetch, type HttpClient } from './http-client';
 export { connectQueryToDevice, createQueryClient, queryClient } from './query-client';

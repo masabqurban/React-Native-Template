@@ -191,6 +191,13 @@ const routes: [method: string, pattern: string, handler: Handler][] = [
       if (actor?.role !== 'admin') return fail(403, 'FORBIDDEN', 'You do not have permission.');
       const user = db.users.find((u) => u.id === params.id);
       if (!user) return fail(404, 'NOT_FOUND', 'User not found.');
+      if (
+        actor.id === user.id &&
+        ((body.role !== undefined && body.role !== user.role) ||
+          (body.status !== undefined && body.status !== 'active'))
+      ) {
+        return fail(422, 'CANNOT_MODIFY_SELF', "You can't change your own role or status.");
+      }
       if (typeof body.email === 'string' && emailTaken(body.email, user.id)) return conflict();
       Object.assign(user, body);
       return ok(user);

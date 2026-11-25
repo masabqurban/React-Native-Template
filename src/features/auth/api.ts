@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { api, dataEnvelope, tokenStore } from '@/lib/api';
+import { api, dataEnvelope, resetSessionRefresh, tokenStore } from '@/lib/api';
 
 import {
   loginResultSchema,
@@ -11,6 +11,7 @@ import {
 
 /** `POST /auth/login`: email + password → tokens + user. */
 export async function signIn(values: SignInValues) {
+  resetSessionRefresh();
   const { data } = await api.post('/auth/login', {
     schema: dataEnvelope(loginResultSchema),
     body: values,

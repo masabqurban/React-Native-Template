@@ -1,6 +1,12 @@
 import { useSyncExternalStore } from 'react';
 
-import { refreshSession, tokenStore } from '@/lib/api';
+import {
+  isApiError,
+  onAuthFailure,
+  refreshSession,
+  resetSessionRefresh,
+  tokenStore,
+} from '@/lib/api';
 
 import { fetchMe, signOutRemote } from './api';
 import type { SessionUser } from './schemas';
@@ -13,6 +19,7 @@ export type SessionState =
  * subscribe with useSyncExternalStore (no provider, no re-render cascade).
  */
 let state: SessionState = { status: 'loading' };
+let authEpoch = 0;
 const listeners = new Set<() => void>();
 
 function setState(next: SessionState) {
@@ -21,6 +28,13 @@ function setState(next: SessionState) {
     listener();
   });
 }
+
+onAuthFailure(() => {
+  if (state.status === 'signed-in') {
+    authEpoch += 1;
+    setState({ status: 'signed-out' });
+  }
+});
 
 export const sessionStore = {
   get: () => state,
@@ -37,25 +51,34 @@ export const sessionStore = {
    * session from the keychain's refresh token, if there is a valid one.
    */
   async restore() {
+    const epoch = ++authEpoch;
     try {
       if (await refreshSession()) {
-        setState({ status: 'signed-in', user: await fetchMe() });
+        const user = await fetchMe();
+        if (epoch !== authEpoch) return;
+        setState({ status: 'signed-in', user });
         return;
       }
-    } catch {
-      await tokenStore.clear();
+    } catch (error) {
+      if (epoch !== authEpoch) return;
+      if (isApiError(error) && (error.status === 401 || error.status === 403)) {
+        await tokenStore.clear().catch(() => undefined);
+      }
     }
-    setState({ status: 'signed-out' });
+    if (epoch === authEpoch) setState({ status: 'signed-out' });
   },
 
   /** After a successful sign-in, or when the user edits their own profile. */
   setUser(user: SessionUser) {
+    authEpoch += 1;
     setState({ status: 'signed-in', user });
   },
 
   async signOut() {
+    authEpoch += 1;
+    resetSessionRefresh();
     const refreshToken = await tokenStore.getRefresh();
-    await tokenStore.clear();
+    await tokenStore.clear().catch(() => undefined);
     setState({ status: 'signed-out' });
     // Best effort: the session is already gone on this device.
     if (refreshToken) await signOutRemote(refreshToken).catch(() => undefined);
